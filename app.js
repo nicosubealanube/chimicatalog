@@ -757,11 +757,16 @@ async function handleAdminLoginSubmit(e) {
       closeModal(DOM.adminAuthModal);
       openAdminDashboard();
     } else {
-      if (res.status === 401) {
-        DOM.loginErrorMsg.textContent = "Contraseña incorrecta. Inténtalo de nuevo.";
-      } else {
-        DOM.loginErrorMsg.textContent = `Error del servidor (${res.status}). Verifica el estado del Deploy en Netlify.`;
+      let errorMessage = `Error del servidor (${res.status}).`;
+      try {
+        const errData = await res.json();
+        if (errData && errData.error) {
+          errorMessage = `${errData.error}${errData.details ? ': ' + errData.details : ''}`;
+        }
+      } catch (e) {
+        // Fallback to default
       }
+      DOM.loginErrorMsg.textContent = errorMessage;
       DOM.loginErrorMsg.classList.remove("hidden");
       DOM.adminPasswordInput.focus();
       DOM.adminPasswordInput.select();
