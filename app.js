@@ -146,7 +146,7 @@ const DOM = {
   categoryTabsContainer: document.getElementById("category-tabs-container"),
   subcategoryGroup: document.getElementById("subcategory-group"),
   subcategoryTabsContainer: document.getElementById("subcategory-tabs-container"),
-  
+
   // Barra de filtros
   activeFiltersBar: document.getElementById("active-filters-bar"),
   filtersBadgesContainer: document.getElementById("filters-badges-container"),
@@ -180,7 +180,7 @@ const DOM = {
   adminDashboardOverlay: document.getElementById("admin-dashboard-overlay"),
   adminDashboardClose: document.getElementById("admin-dashboard-close"),
   adminLogoutBtn: document.getElementById("admin-logout-btn"),
-  
+
   // Formulario Admin
   productForm: document.getElementById("product-form"),
   formActionTitle: document.getElementById("form-action-title"),
@@ -197,7 +197,7 @@ const DOM = {
   removeImgBtn: document.getElementById("remove-img-btn"),
   formSubmitBtn: document.getElementById("form-submit-btn"),
   formCancelBtn: document.getElementById("form-cancel-btn"),
-  
+
   // Categorías y Subcategorías personalizadas
   customCategoryGroup: document.getElementById("custom-category-group"),
   customSubcategoryGroup: document.getElementById("custom-subcategory-group"),
@@ -262,7 +262,7 @@ function rebuildCategoriesFromProducts() {
 document.addEventListener("DOMContentLoaded", async () => {
   setupEventListeners();
   checkAdminSession();
-  
+
   // Mostrar indicador de carga
   DOM.productGrid.innerHTML = `
     <div class="loading-indicator" style="text-align: center; padding: 4rem 1rem; grid-column: 1 / -1; color: var(--text-muted);">
@@ -274,9 +274,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       <p style="font-size: 0.9rem; margin-top: 0.5rem; color: var(--text-muted);">Por favor espera un momento.</p>
     </div>
   `;
-  
+
   await loadCatalogFromServer();
-  
+
   renderCategoryTabs();
   renderCatalog();
 });
@@ -286,11 +286,11 @@ async function loadCatalogFromServer() {
   try {
     const res = await fetch(API_URL);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-    
+
     const data = await res.json();
     state.products = data.products || [];
     categories = data.categories || JSON.parse(JSON.stringify(CATEGORIES_DATA));
-    
+
     saveCatalogLocal();
     saveCategoriesLocal();
   } catch (e) {
@@ -374,18 +374,18 @@ function setupEventListeners() {
       DOM.formCustomCategoryInput.required = true;
       DOM.customSubcategoryGroup.classList.remove("hidden");
       DOM.formCustomSubcategoryInput.required = true;
-      
+
       DOM.formSubcategorySelect.innerHTML = `<option value="new_sub" selected>+ Crear Nueva Subcategoría...</option>`;
       DOM.formSubcategorySelect.disabled = true;
     } else {
       DOM.customCategoryGroup.classList.add("hidden");
       DOM.formCustomCategoryInput.required = false;
       DOM.formCustomCategoryInput.value = "";
-      
+
       DOM.customSubcategoryGroup.classList.add("hidden");
       DOM.formCustomSubcategoryInput.required = false;
       DOM.formCustomSubcategoryInput.value = "";
-      
+
       populateFormSubcategories(val);
     }
   });
@@ -444,7 +444,7 @@ function renderCategoryTabs() {
       <span>Ver Todo</span>
     </button>
   `;
-  
+
   Object.keys(categories).forEach(cat => {
     html += `
       <button class="tab-btn ${state.currentCategory === cat ? 'active' : ''}" data-category="${cat}">
@@ -452,15 +452,15 @@ function renderCategoryTabs() {
       </button>
     `;
   });
-  
+
   DOM.categoryTabsContainer.innerHTML = html;
-  
+
   const categoryButtons = DOM.categoryTabsContainer.querySelectorAll(".tab-btn");
   categoryButtons.forEach(btn => {
     btn.addEventListener("click", () => {
       categoryButtons.forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
-      
+
       const category = btn.getAttribute("data-category");
       selectCategory(category);
     });
@@ -470,7 +470,7 @@ function renderCategoryTabs() {
 function selectCategory(category) {
   state.currentCategory = category;
   state.currentSubcategory = null; // Resetea la subcategoría al cambiar de categoría principal
-  
+
   if (category === "all") {
     DOM.subcategoryGroup.classList.add("hidden");
   } else {
@@ -478,28 +478,28 @@ function selectCategory(category) {
     renderSubcategoryTabs(category);
     DOM.subcategoryGroup.classList.remove("hidden");
   }
-  
+
   renderCatalog();
 }
 
 function renderSubcategoryTabs(category) {
   const subcategories = categories[category] || [];
-  
+
   // Crear HTML de las pestañas
   let html = `<button class="sub-tab-btn active" data-subcategory="all">Todos</button>`;
   subcategories.forEach(sub => {
     html += `<button class="sub-tab-btn" data-subcategory="${sub}">${sub}</button>`;
   });
-  
+
   DOM.subcategoryTabsContainer.innerHTML = html;
-  
+
   // Agregar event listeners a las nuevas pestañas
   const subBtns = DOM.subcategoryTabsContainer.querySelectorAll(".sub-tab-btn");
   subBtns.forEach(btn => {
     btn.addEventListener("click", () => {
       subBtns.forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
-      
+
       const subcat = btn.getAttribute("data-subcategory");
       state.currentSubcategory = subcat === "all" ? null : subcat;
       renderCatalog();
@@ -511,10 +511,10 @@ function resetAllFilters() {
   state.currentCategory = "all";
   state.currentSubcategory = null;
   state.searchQuery = "";
-  
+
   DOM.searchInput.value = "";
   DOM.subcategoryGroup.classList.add("hidden");
-  
+
   renderCategoryTabs();
   renderCatalog();
 }
@@ -524,26 +524,26 @@ function getFilteredProducts() {
   return state.products.filter(p => {
     // Filtro Categoría Principal
     const matchCategory = state.currentCategory === "all" || p.category === state.currentCategory;
-    
+
     // Filtro Subcategoría
     const matchSubcategory = !state.currentSubcategory || p.subcategory === state.currentSubcategory;
-    
+
     // Filtro Término de Búsqueda (busca en Nombre y Descripción)
-    const matchQuery = !state.searchQuery || 
-                       p.name.toLowerCase().includes(state.searchQuery) || 
-                       p.description.toLowerCase().includes(state.searchQuery);
-                       
+    const matchQuery = !state.searchQuery ||
+      p.name.toLowerCase().includes(state.searchQuery) ||
+      p.description.toLowerCase().includes(state.searchQuery);
+
     return matchCategory && matchSubcategory && matchQuery;
   });
 }
 
 function renderCatalog() {
   const filtered = getFilteredProducts();
-  
+
   // Actualizar contador
   const count = filtered.length;
   DOM.resultsCounter.textContent = count === 1 ? "Mostrando 1 producto" : `Mostrando ${count} productos`;
-  
+
   // Renderizar filtros activos
   renderActiveFiltersBar();
 
@@ -552,15 +552,15 @@ function renderCatalog() {
     DOM.emptyState.classList.remove("hidden");
     return;
   }
-  
+
   DOM.emptyState.classList.add("hidden");
-  
+
   let gridHtml = "";
   filtered.forEach(p => {
     // Formatear precios en moneda argentina ARS
     const wholesalePriceStr = p.priceWholesale.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 });
     const retailPriceStr = p.priceRetail.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 });
-    
+
     gridHtml += `
       <article class="product-list-row" data-id="${p.id}" onclick="openProductDetail('${p.id}')">
         <div class="product-list-img-sec">
@@ -587,14 +587,14 @@ function renderCatalog() {
       </article>
     `;
   });
-  
+
   DOM.productGrid.innerHTML = gridHtml;
 }
 
 function renderActiveFiltersBar() {
   let hasFilters = false;
   let badgesHtml = "";
-  
+
   if (state.currentCategory !== "all") {
     hasFilters = true;
     badgesHtml += `
@@ -604,7 +604,7 @@ function renderActiveFiltersBar() {
       </span>
     `;
   }
-  
+
   if (state.currentSubcategory) {
     hasFilters = true;
     badgesHtml += `
@@ -614,7 +614,7 @@ function renderActiveFiltersBar() {
       </span>
     `;
   }
-  
+
   if (state.searchQuery) {
     hasFilters = true;
     badgesHtml += `
@@ -624,7 +624,7 @@ function renderActiveFiltersBar() {
       </span>
     `;
   }
-  
+
   if (hasFilters) {
     DOM.filtersBadgesContainer.innerHTML = badgesHtml;
     DOM.activeFiltersBar.classList.remove("hidden");
@@ -677,23 +677,23 @@ function closeModal(modalElement) {
 window.openProductDetail = (productId) => {
   const product = state.products.find(p => p.id === productId);
   if (!product) return;
-  
+
   DOM.modalProductImg.src = product.image;
   DOM.modalProductImg.alt = product.name;
   DOM.modalProductCategory.textContent = product.category;
   DOM.modalProductSubcategory.textContent = product.subcategory;
   DOM.modalProductTitle.textContent = product.name;
   DOM.modalProductDesc.textContent = product.description;
-  
+
   DOM.modalProductPriceWholesale.textContent = product.priceWholesale.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 });
   DOM.modalProductPriceRetail.textContent = product.priceRetail.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 });
-  
+
   // Configurar enlace de WhatsApp
-  const phone = "5491123456789"; // Número de WhatsApp configurado para ChimiPesca
-  const messageText = `Hola ChimiPesca! Vi en el catálogo online el producto: *${product.name}* (${product.category} - ${product.subcategory}).\nPrecio minorista: ${product.priceRetail.toLocaleString('es-AR', {style:'currency', currency:'ARS', minimumFractionDigits:0})}\nPrecio mayorista: ${product.priceWholesale.toLocaleString('es-AR', {style:'currency', currency:'ARS', minimumFractionDigits:0})}\n\nQuería consultarles si tienen stock disponible y cómo puedo realizar la compra. Gracias!`;
-  
+  const phone = "5491137688582"; // Número de WhatsApp configurado para ChimiPesca
+  const messageText = `Hola ChimiPesca! Vi en el catálogo online el producto: *${product.name}* (${product.category} - ${product.subcategory}).\nPrecio minorista: ${product.priceRetail.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 })}\nPrecio mayorista: ${product.priceWholesale.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 })}\n\nQuería consultarles si tienen stock disponible y cómo puedo realizar la compra. Gracias!`;
+
   DOM.whatsappInquiryBtn.href = `https://wa.me/${phone}?text=${encodeURIComponent(messageText)}`;
-  
+
   openModal(DOM.productDetailModal);
 };
 
@@ -712,10 +712,10 @@ function triggerAdminAction() {
 async function handleAdminLoginSubmit(e) {
   e.preventDefault();
   const password = DOM.adminPasswordInput.value;
-  
+
   DOM.loginErrorMsg.classList.add("hidden");
   DOM.adminPasswordInput.disabled = true;
-  
+
   const submitBtn = DOM.adminLoginForm.querySelector("button[type='submit']");
   const originalText = submitBtn.textContent;
   submitBtn.textContent = "Verificando...";
@@ -727,17 +727,17 @@ async function handleAdminLoginSubmit(e) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "auth", password })
     });
-    
+
     if (res.ok) {
       state.isAdmin = true;
       safeStorage.setItem("chimipesca_admin_logged", "true", true);
       safeStorage.setItem("chimipesca_admin_password", password, true);
-      
+
       // Cambiar estilos del botón lock del header para indicar login
       DOM.adminLoginTrigger.classList.add("logged-in");
       DOM.adminLoginTrigger.style.color = "var(--primary-color)";
       DOM.adminLoginTrigger.setAttribute("title", "Abrir Panel Administrador");
-      
+
       DOM.adminPasswordInput.value = "";
       closeModal(DOM.adminAuthModal);
       openAdminDashboard();
@@ -772,12 +772,12 @@ function handleAdminLogout() {
   state.isAdmin = false;
   safeStorage.removeItem("chimipesca_admin_logged", true);
   safeStorage.removeItem("chimipesca_admin_password", true);
-  
+
   // Restaurar icono del lock del header
   DOM.adminLoginTrigger.classList.remove("logged-in");
   DOM.adminLoginTrigger.style.color = "";
   DOM.adminLoginTrigger.setAttribute("title", "Acceso Administrador");
-  
+
   closeModal(DOM.adminDashboardModal);
   resetAdminForm();
 }
@@ -798,7 +798,7 @@ function populateFormCategories(selectedCategory = "") {
   });
   html += `<option value="new_cat" style="font-weight: bold; color: var(--primary-color);">+ Crear Nueva Categoría...</option>`;
   DOM.formCategorySelect.innerHTML = html;
-  
+
   if (selectedCategory) {
     DOM.formCategorySelect.value = selectedCategory;
   }
@@ -811,17 +811,17 @@ function populateFormSubcategories(category, selectedSubcategory = "") {
     DOM.formSubcategorySelect.disabled = true;
     return;
   }
-  
+
   const subcategories = categories[category] || [];
   let html = `<option value="" disabled selected>Seleccione subcategoría...</option>`;
   subcategories.forEach(sub => {
     html += `<option value="${sub}">${sub}</option>`;
   });
   html += `<option value="new_sub" style="font-weight: bold; color: var(--primary-color);">+ Crear Nueva Subcategoría...</option>`;
-  
+
   DOM.formSubcategorySelect.innerHTML = html;
   DOM.formSubcategorySelect.disabled = false;
-  
+
   if (selectedSubcategory) {
     if (subcategories.includes(selectedSubcategory)) {
       DOM.formSubcategorySelect.value = selectedSubcategory;
@@ -839,21 +839,21 @@ function populateFormSubcategories(category, selectedSubcategory = "") {
 // Renderizado de tabla de administración
 function renderAdminProductsTable() {
   const searchTerm = DOM.adminSearchInput.value.toLowerCase().trim();
-  
+
   // Filtrar artículos para la tabla
-  const filtered = state.products.filter(p => 
-    p.name.toLowerCase().includes(searchTerm) || 
+  const filtered = state.products.filter(p =>
+    p.name.toLowerCase().includes(searchTerm) ||
     p.category.toLowerCase().includes(searchTerm)
   );
-  
+
   if (filtered.length === 0) {
     DOM.adminProductsTbody.innerHTML = "";
     DOM.adminNoProducts.classList.remove("hidden");
     return;
   }
-  
+
   DOM.adminNoProducts.classList.add("hidden");
-  
+
   let tbodyHtml = "";
   filtered.forEach(p => {
     tbodyHtml += `
@@ -888,7 +888,7 @@ function renderAdminProductsTable() {
       </tr>
     `;
   });
-  
+
   DOM.adminProductsTbody.innerHTML = tbodyHtml;
 }
 
@@ -896,13 +896,13 @@ function renderAdminProductsTable() {
 function handleFormImageUpload(e) {
   const file = e.target.files[0];
   if (!file) return;
-  
+
   DOM.fileNameSpan.textContent = file.name;
-  
+
   // Mostrar feedback visual de carga
   DOM.fileNameSpan.style.color = "var(--secondary-color)";
   DOM.fileNameSpan.style.fontWeight = "700";
-  
+
   // Comprimir imagen y convertir a Base64 para guardado seguro en localStorage
   compressImage(file, (base64Result) => {
     state.currentUploadedImageBase64 = base64Result;
@@ -914,15 +914,15 @@ function handleFormImageUpload(e) {
 
 function compressImage(file, callback) {
   const reader = new FileReader();
-  reader.onload = function(event) {
+  reader.onload = function (event) {
     const img = new Image();
-    img.onload = function() {
+    img.onload = function () {
       const canvas = document.createElement("canvas");
       let width = img.width;
       let height = img.height;
       const MAX_WIDTH = 450;
       const MAX_HEIGHT = 450;
-      
+
       // Ajustar dimensiones manteniendo relación de aspecto
       if (width > height) {
         if (width > MAX_WIDTH) {
@@ -935,14 +935,14 @@ function compressImage(file, callback) {
           height = MAX_HEIGHT;
         }
       }
-      
+
       canvas.width = width;
       canvas.height = height;
       const ctx = canvas.getContext("2d");
-      
+
       // Dibujar imagen reducida en el canvas
       ctx.drawImage(img, 0, 0, width, height);
-      
+
       // Exportar a base64 como JPEG de calidad media (0.7) para optimizar almacenamiento
       const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
       callback(compressedBase64);
@@ -958,7 +958,7 @@ function removeFormImage() {
   DOM.fileNameSpan.style.color = "";
   DOM.fileNameSpan.style.fontWeight = "";
   state.currentUploadedImageBase64 = null;
-  
+
   DOM.imagePreview.src = "";
   DOM.imagePreview.classList.add("hidden");
   DOM.removeImgBtn.classList.add("hidden");
@@ -967,10 +967,10 @@ function removeFormImage() {
 async function handleDeleteProduct(productId) {
   const product = state.products.find(p => p.id === productId);
   if (!product) return;
-  
+
   if (confirm(`¿Estás seguro de que deseas eliminar el artículo "${product.name}"?`)) {
     const password = safeStorage.getItem("chimipesca_admin_password", true);
-    
+
     try {
       const res = await fetch(API_URL, {
         method: "POST",
@@ -981,20 +981,20 @@ async function handleDeleteProduct(productId) {
           productId
         })
       });
-      
+
       if (!res.ok) {
         const errData = await res.json();
         throw new Error(errData.error || "Error al eliminar el producto");
       }
-      
+
       // Si estamos editando el mismo producto que eliminamos, cancelar la edición primero
       if (state.editingProductId === productId) {
         resetAdminForm();
       }
-      
+
       state.products = state.products.filter(p => p.id !== productId);
       saveCatalogLocal();
-      
+
       renderCatalog();
       renderAdminProductsTable();
     } catch (error) {
@@ -1007,39 +1007,39 @@ async function handleDeleteProduct(productId) {
 window.startEditProduct = (productId) => {
   const product = state.products.find(p => p.id === productId);
   if (!product) return;
-  
+
   state.editingProductId = productId;
-  
+
   // Rellenar formulario
   DOM.formActionTitle.textContent = "Editar Artículo";
   DOM.editProductIdInput.value = product.id;
   DOM.formNameInput.value = product.name;
-  
+
   populateFormCategories(product.category);
   populateFormSubcategories(product.category, product.subcategory);
-  
+
   DOM.formDescTextarea.value = product.description;
   DOM.formPriceWholesaleInput.value = product.priceWholesale;
   DOM.formPriceRetailInput.value = product.priceRetail;
-  
+
   // Carga de imagen preview
   state.currentUploadedImageBase64 = product.image;
   DOM.imagePreview.src = product.image;
   DOM.imagePreview.classList.remove("hidden");
   DOM.removeImgBtn.classList.remove("hidden");
   DOM.fileNameSpan.textContent = "Mantener imagen actual";
-  
+
   // Mostrar botón Cancelar
   DOM.formCancelBtn.classList.remove("hidden");
   DOM.formSubmitBtn.textContent = "Guardar Cambios";
-  
+
   // Scroll hacia el formulario de edición (útil en móviles)
   DOM.productForm.scrollIntoView({ behavior: 'smooth' });
 };
 
 async function handleProductFormSubmit(e) {
   e.preventDefault();
-  
+
   const id = DOM.editProductIdInput.value;
   const name = DOM.formNameInput.value.trim();
   let category = DOM.formCategorySelect.value;
@@ -1047,9 +1047,9 @@ async function handleProductFormSubmit(e) {
   const description = DOM.formDescTextarea.value.trim();
   const priceWholesale = parseFloat(DOM.formPriceWholesaleInput.value);
   const priceRetail = parseFloat(DOM.formPriceRetailInput.value);
-  
+
   let categoriesChanged = false;
-  
+
   // Manejo de categoría personalizada
   if (category === "new_cat") {
     const newCatName = DOM.formCustomCategoryInput.value.trim();
@@ -1063,7 +1063,7 @@ async function handleProductFormSubmit(e) {
       categoriesChanged = true;
     }
   }
-  
+
   // Manejo de subcategoría personalizada
   if (subcategory === "new_sub") {
     const newSubName = DOM.formCustomSubcategoryInput.value.trim();
@@ -1077,7 +1077,7 @@ async function handleProductFormSubmit(e) {
       categoriesChanged = true;
     }
   }
-  
+
   // Asignar imagen (la subida comprimida en base64, o la imagen por defecto correspondiente si es nuevo y no subió nada)
   let image = state.currentUploadedImageBase64;
   if (!image) {
@@ -1089,7 +1089,7 @@ async function handleProductFormSubmit(e) {
       image = "assets/default-reel.png";
     }
   }
-  
+
   const productToSave = {
     id: state.editingProductId || ("prod_" + Date.now()),
     name,
@@ -1100,12 +1100,12 @@ async function handleProductFormSubmit(e) {
     priceRetail,
     image
   };
-  
+
   const password = safeStorage.getItem("chimipesca_admin_password", true);
   const originalSubmitText = DOM.formSubmitBtn.textContent;
   DOM.formSubmitBtn.disabled = true;
   DOM.formSubmitBtn.textContent = "Guardando...";
-  
+
   try {
     // 1. Guardar el producto en el servidor
     const prodRes = await fetch(API_URL, {
@@ -1117,12 +1117,12 @@ async function handleProductFormSubmit(e) {
         product: productToSave
       })
     });
-    
+
     if (!prodRes.ok) {
       const errData = await prodRes.json();
       throw new Error(errData.error || "Error al guardar el producto");
     }
-    
+
     // 2. Si las categorías cambiaron, sincronizarlas en el servidor
     if (categoriesChanged) {
       const catRes = await fetch(API_URL, {
@@ -1134,13 +1134,13 @@ async function handleProductFormSubmit(e) {
           categories
         })
       });
-      
+
       if (!catRes.ok) {
         const errData = await catRes.json();
         console.error("Error guardando categorías:", errData.error);
       }
     }
-    
+
     // Actualizar estado local
     if (state.editingProductId) {
       const idx = state.products.findIndex(p => p.id === state.editingProductId);
@@ -1150,10 +1150,10 @@ async function handleProductFormSubmit(e) {
     } else {
       state.products.unshift(productToSave);
     }
-    
+
     saveCatalogLocal();
     saveCategoriesLocal();
-    
+
     renderCategoryTabs();
     renderCatalog();
     renderAdminProductsTable();
@@ -1170,26 +1170,26 @@ async function handleProductFormSubmit(e) {
 function resetAdminForm() {
   state.editingProductId = null;
   state.currentUploadedImageBase64 = null;
-  
+
   DOM.productForm.reset();
   DOM.editProductIdInput.value = "";
   DOM.formActionTitle.textContent = "Agregar Nuevo Artículo";
   DOM.formSubmitBtn.textContent = "Subir al Catálogo";
   DOM.formCancelBtn.classList.add("hidden");
-  
+
   populateFormCategories();
-  
+
   DOM.formSubcategorySelect.disabled = true;
   DOM.formSubcategorySelect.innerHTML = `<option value="" disabled selected>Seleccione una categoría primero...</option>`;
-  
+
   DOM.customCategoryGroup.classList.add("hidden");
   DOM.formCustomCategoryInput.required = false;
   DOM.formCustomCategoryInput.value = "";
-  
+
   DOM.customSubcategoryGroup.classList.add("hidden");
   DOM.formCustomSubcategoryInput.required = false;
   DOM.formCustomSubcategoryInput.value = "";
-  
+
   // Limpiar preview de imagen
   DOM.imagePreview.src = "";
   DOM.imagePreview.classList.add("hidden");
@@ -1205,14 +1205,14 @@ function exportCatalogJSON() {
     alert("El catálogo está vacío. No hay nada para exportar.");
     return;
   }
-  
+
   const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state.products, null, 2));
   const downloadAnchor = document.createElement("a");
   downloadAnchor.setAttribute("href", dataStr);
-  
-  const dateStr = new Date().toISOString().slice(0,10);
+
+  const dateStr = new Date().toISOString().slice(0, 10);
   downloadAnchor.setAttribute("download", `chimipesca_catalogo_${dateStr}.json`);
-  
+
   document.body.appendChild(downloadAnchor);
   downloadAnchor.click();
   downloadAnchor.remove();
@@ -1221,23 +1221,23 @@ function exportCatalogJSON() {
 function importCatalogJSON(e) {
   const file = e.target.files[0];
   if (!file) return;
-  
+
   const reader = new FileReader();
-  reader.onload = async function(evt) {
+  reader.onload = async function (evt) {
     try {
       const importedProducts = JSON.parse(evt.target.result);
-      
+
       // Validación básica de estructura de datos
       if (Array.isArray(importedProducts)) {
-        const isValid = importedProducts.every(p => 
-          p.id && p.name && p.category && p.subcategory && 
+        const isValid = importedProducts.every(p =>
+          p.id && p.name && p.category && p.subcategory &&
           typeof p.priceWholesale === 'number' && typeof p.priceRetail === 'number'
         );
-        
+
         if (isValid) {
           if (confirm(`Se detectaron ${importedProducts.length} productos. ¿Deseas sobreescribir el catálogo actual con este archivo de copia de seguridad?`)) {
             const password = safeStorage.getItem("chimipesca_admin_password", true);
-            
+
             // Reconstruir categorías a partir de productos
             const tempCategories = JSON.parse(JSON.stringify(CATEGORIES_DATA));
             importedProducts.forEach(p => {
@@ -1248,7 +1248,7 @@ function importCatalogJSON(e) {
                 tempCategories[p.category].push(p.subcategory);
               }
             });
-            
+
             try {
               const res = await fetch(API_URL, {
                 method: "POST",
@@ -1260,18 +1260,18 @@ function importCatalogJSON(e) {
                   categories: tempCategories
                 })
               });
-              
+
               if (!res.ok) {
                 const errData = await res.json();
                 throw new Error(errData.error || "Error al importar el catálogo");
               }
-              
+
               state.products = importedProducts;
               categories = tempCategories;
-              
+
               saveCatalogLocal();
               saveCategoriesLocal();
-              
+
               renderCategoryTabs();
               renderCatalog();
               renderAdminProductsTable();
@@ -1302,7 +1302,7 @@ function importCatalogJSON(e) {
 async function resetCatalogToSeeded() {
   if (confirm("¿Estás seguro de que deseas restablecer el catálogo a los artículos predeterminados? Se borrarán todos los cambios y productos que hayas agregado.")) {
     const password = safeStorage.getItem("chimipesca_admin_password", true);
-    
+
     try {
       const res = await fetch(API_URL, {
         method: "POST",
@@ -1312,18 +1312,18 @@ async function resetCatalogToSeeded() {
           password
         })
       });
-      
+
       if (!res.ok) {
         const errData = await res.json();
         throw new Error(errData.error || "Error al restablecer el catálogo");
       }
-      
+
       state.products = [...DEFAULT_PRODUCTS];
       categories = JSON.parse(JSON.stringify(CATEGORIES_DATA));
-      
+
       saveCatalogLocal();
       saveCategoriesLocal();
-      
+
       renderCategoryTabs();
       renderCatalog();
       renderAdminProductsTable();
@@ -1344,7 +1344,7 @@ function populateManageCategories() {
     html += `<option value="${cat}">${cat}</option>`;
   });
   DOM.manageCategorySelect.innerHTML = html;
-  
+
   DOM.manageSubcategorySelect.innerHTML = `<option value="" disabled selected>Seleccione categoría primero...</option>`;
   DOM.manageSubcategorySelect.disabled = true;
   DOM.deleteCategoryBtn.disabled = true;
@@ -1381,25 +1381,25 @@ function handleManageSubcategorySelectChange(e) {
 async function handleDeleteCategory() {
   const cat = DOM.manageCategorySelect.value;
   if (!cat) return;
-  
+
   // Contar productos asociados
   const associatedProducts = state.products.filter(p => p.category === cat);
   const count = associatedProducts.length;
-  
+
   let confirmMsg = `¿Estás seguro de que deseas eliminar la categoría "${cat}"?`;
   if (count > 0) {
     confirmMsg += `\n\nATENCIÓN: Hay ${count} producto(s) en esta categoría que también serán eliminados de forma permanente.`;
   }
-  
+
   if (confirm(confirmMsg)) {
     const password = safeStorage.getItem("chimipesca_admin_password", true);
-    
+
     try {
       const nextCats = { ...categories };
       delete nextCats[cat];
-      
+
       const remainingProducts = state.products.filter(p => p.category !== cat);
-      
+
       const res = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1410,25 +1410,25 @@ async function handleDeleteCategory() {
           categories: nextCats
         })
       });
-      
+
       if (!res.ok) {
         const errData = await res.json();
         throw new Error(errData.error || "Error al eliminar la categoría");
       }
-      
+
       categories = nextCats;
       state.products = remainingProducts;
-      
+
       saveCatalogLocal();
       saveCategoriesLocal();
-      
+
       renderCategoryTabs();
       renderCatalog();
       renderAdminProductsTable();
       populateFormCategories();
       populateManageCategories();
       resetAdminForm();
-      
+
       alert(`Categoría "${cat}" eliminada exitosamente.`);
     } catch (error) {
       alert(`Error al eliminar categoría: ${error.message}`);
@@ -1441,27 +1441,27 @@ async function handleDeleteSubcategory() {
   const cat = DOM.manageCategorySelect.value;
   const sub = DOM.manageSubcategorySelect.value;
   if (!cat || !sub) return;
-  
+
   // Contar productos asociados
   const associatedProducts = state.products.filter(p => p.category === cat && p.subcategory === sub);
   const count = associatedProducts.length;
-  
+
   let confirmMsg = `¿Estás seguro de que deseas eliminar la subcategoría "${sub}" de la categoría "${cat}"?`;
   if (count > 0) {
     confirmMsg += `\n\nATENCIÓN: Hay ${count} producto(s) en esta subcategoría que también serán eliminados de forma permanente.`;
   }
-  
+
   if (confirm(confirmMsg)) {
     const password = safeStorage.getItem("chimipesca_admin_password", true);
-    
+
     try {
       const nextCats = JSON.parse(JSON.stringify(categories));
       if (nextCats[cat]) {
         nextCats[cat] = nextCats[cat].filter(s => s !== sub);
       }
-      
+
       const remainingProducts = state.products.filter(p => !(p.category === cat && p.subcategory === sub));
-      
+
       const res = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1472,25 +1472,25 @@ async function handleDeleteSubcategory() {
           categories: nextCats
         })
       });
-      
+
       if (!res.ok) {
         const errData = await res.json();
         throw new Error(errData.error || "Error al eliminar la subcategoría");
       }
-      
+
       categories = nextCats;
       state.products = remainingProducts;
-      
+
       saveCatalogLocal();
       saveCategoriesLocal();
-      
+
       renderCategoryTabs();
       renderCatalog();
       renderAdminProductsTable();
       populateFormCategories();
       populateManageCategories();
       resetAdminForm();
-      
+
       alert(`Subcategoría "${sub}" eliminada exitosamente.`);
     } catch (error) {
       alert(`Error al eliminar subcategoría: ${error.message}`);
