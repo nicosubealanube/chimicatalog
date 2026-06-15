@@ -441,28 +441,13 @@ function setupEventListeners() {
 function renderCategoryTabs() {
   let html = `
     <button class="tab-btn ${state.currentCategory === 'all' ? 'active' : ''}" data-category="all">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tab-icon"><path d="M2 12c4-5 9-5 13-2c2-2 4-3 7-3c-1 2-1 4 0 6c-2-1-4-2-5-3c-4 4-9 4-13 0z" /><circle cx="6" cy="11" r="1" /></svg>
       <span>Ver Todo</span>
     </button>
   `;
   
   Object.keys(categories).forEach(cat => {
-    let iconSvg = '';
-    if (cat === "Cañas") {
-      iconSvg = `<path d="M2 22L22 2M6 18l1.5 1.5M10 14l1.5 1.5M14 10l1.5 1.5M18 6l1.5 1.5" /><circle cx="4" cy="20" r="2" /><path d="M3 21l1.5-1.5" />`;
-    } else if (cat === "Reeles") {
-      iconSvg = `<circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="2" /><circle cx="12" cy="7" r="1" fill="currentColor" /><circle cx="12" cy="17" r="1" fill="currentColor" /><circle cx="7" cy="12" r="1" fill="currentColor" /><circle cx="17" cy="12" r="1" fill="currentColor" /><circle cx="16" cy="8" r="1.5" />`;
-    } else if (cat === "Tanzas") {
-      iconSvg = `<circle cx="12" cy="5" r="1.5" /><path d="M12 6.5v8a4 4 0 0 1-8 0v-2l2 2" />`;
-    } else if (cat === "Accesorios") {
-      iconSvg = `<circle cx="12" cy="12" r="5" /><line x1="12" y1="7" x2="12" y2="2" /><line x1="12" y1="17" x2="12" y2="22" /><line x1="7" y1="12" x2="17" y2="12" />`;
-    } else {
-      iconSvg = `<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line>`;
-    }
-    
     html += `
       <button class="tab-btn ${state.currentCategory === cat ? 'active' : ''}" data-category="${cat}">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tab-icon">${iconSvg}</svg>
         <span>${cat}</span>
       </button>
     `;

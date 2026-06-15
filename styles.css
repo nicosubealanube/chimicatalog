@@ -390,7 +390,7 @@ label {
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
   transition: all var(--transition-fast);
   white-space: nowrap;
   box-shadow: var(--shadow-sm);
