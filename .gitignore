@@ -1,0 +1,12 @@
+# Netlify local folders
+.netlify/
+
+# Dependencies
+node_modules/
+
+# Local SQLite databases
+local_chimipesca.db
+local_chimipesca.db-journal
+
+# OS files
+.DS_Store
