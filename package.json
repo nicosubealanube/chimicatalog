@@ -4,7 +4,11 @@
   "description": "Catálogo de artículos de pesca para ChimiPesca",
   "main": "index.html",
   "scripts": {
-    "dev": "npx -y serve ."
+    "dev": "npx -y serve .",
+    "netlify": "npx -y netlify-cli@latest dev"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.6.0"
   },
   "keywords": [],
   "author": "ChimiPesca",

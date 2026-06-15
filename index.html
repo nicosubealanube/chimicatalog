@@ -299,7 +299,7 @@
               <!-- Categoría y Subcategoría Dinámica -->
               <div class="form-row">
                 <div class="control-group">
-                  <label for="form-category">Categoría principal*</label>
+                  <label for="form-category">Categoría*</label>
                   <select id="form-category" required>
                     <!-- Completado dinámicamente mediante JS -->
                   </select>
@@ -375,8 +375,7 @@
 
               <div class="form-buttons">
                 <button type="submit" id="form-submit-btn" class="primary-button submit-btn">Subir al Catálogo</button>
-                <button type="button" id="form-cancel-btn" class="secondary-btn cancel-btn hidden">Cancelar
-                  Edición</button>
+                <button type="button" id="form-cancel-btn" class="secondary-btn cancel-btn hidden">Cancelar Edición</button>
               </div>
             </form>
           </div>
@@ -404,6 +403,38 @@
               </table>
               <div id="admin-no-products" class="admin-no-products hidden">
                 <p>No hay productos cargados en esta vista.</p>
+              </div>
+            </div>
+
+            <!-- Gestión de Categorías y Subcategorías -->
+            <div class="category-manager-container">
+              <h4>Gestionar Categorías</h4>
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">Elimina categorías o subcategorías creadas por error.</p>
+              
+              <div class="control-group" style="margin-bottom: 12px;">
+                <label for="manage-category-select">Categoría a eliminar</label>
+                <div class="manage-row">
+                  <select id="manage-category-select">
+                    <!-- Dinámico -->
+                  </select>
+                  <button type="button" id="delete-category-btn" class="secondary-btn delete-btn-outline" disabled title="Eliminar Categoría">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    <span>Eliminar</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="control-group">
+                <label for="manage-subcategory-select">Subcategoría a eliminar</label>
+                <div class="manage-row">
+                  <select id="manage-subcategory-select" disabled>
+                    <option value="" disabled selected>Seleccione categoría primero...</option>
+                  </select>
+                  <button type="button" id="delete-subcategory-btn" class="secondary-btn delete-btn-outline" disabled title="Eliminar Subcategoría">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    <span>Eliminar</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>

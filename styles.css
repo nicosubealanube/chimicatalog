@@ -359,7 +359,7 @@ label {
 }
 
 @media (min-width: 768px) {
-  .control-group label {
+  .controls-card .control-group label {
     text-align: center;
   }
   .category-tabs {
@@ -1086,6 +1086,10 @@ label {
   border-bottom: 2px solid var(--glass-border);
 }
 
+.dashboard-header .dashboard-actions {
+  margin-right: 36px;
+}
+
 .logout-btn {
   border-color: rgba(220, 38, 38, 0.4);
   color: #DC2626;
@@ -1337,6 +1341,7 @@ input[type="file"] {
   gap: 2px;
   font-size: 0.78rem;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .td-prices-box span strong {
@@ -1443,6 +1448,54 @@ input[type="file"] {
   background-color: #FEF2F2;
   border-color: #DC2626;
   color: #DC2626;
+}
+
+/* --- Gestión de Categorías y Subcategorías (Panel Admin) --- */
+.category-manager-container {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 2px dashed var(--glass-border);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.category-manager-container h4 {
+  font-size: 1.05rem;
+  color: var(--secondary-color);
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.manage-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.manage-row select {
+  flex: 1;
+}
+
+.delete-btn-outline {
+  border-color: rgba(220, 38, 38, 0.4) !important;
+  color: #DC2626 !important;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.delete-btn-outline:hover:not(:disabled) {
+  background-color: #FEF2F2 !important;
+  border-color: #DC2626 !important;
+}
+
+.delete-btn-outline:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* --- Footer --- */

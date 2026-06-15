@@ -212,13 +212,22 @@ const DOM = {
   // Backups
   backupExportBtn: document.getElementById("backup-export-btn"),
   backupImportFile: document.getElementById("backup-import-file"),
-  backupResetBtn: document.getElementById("backup-reset-btn")
+  backupResetBtn: document.getElementById("backup-reset-btn"),
+
+  // Gestión de Categorías
+  manageCategorySelect: document.getElementById("manage-category-select"),
+  manageSubcategorySelect: document.getElementById("manage-subcategory-select"),
+  deleteCategoryBtn: document.getElementById("delete-category-btn"),
+  deleteSubcategoryBtn: document.getElementById("delete-subcategory-btn")
 };
+
+// --- API URL y Configuración ---
+const API_URL = "/.netlify/functions/api";
 
 // --- Estado de Categorías dinámicas ---
 let categories = {};
 
-function loadCategories() {
+function loadCategoriesLocal() {
   const savedCats = safeStorage.getItem("chimipesca_categories");
   if (savedCats) {
     try {
@@ -228,11 +237,10 @@ function loadCategories() {
     }
   } else {
     categories = JSON.parse(JSON.stringify(CATEGORIES_DATA));
-    saveCategories();
   }
 }
 
-function saveCategories() {
+function saveCategoriesLocal() {
   safeStorage.setItem("chimipesca_categories", JSON.stringify(categories));
 }
 
@@ -247,54 +255,81 @@ function rebuildCategoriesFromProducts() {
     }
   });
   categories = newCategories;
-  saveCategories();
+  saveCategoriesLocal();
 }
 
 // --- Inicialización ---
-document.addEventListener("DOMContentLoaded", () => {
-  loadCategories();
-  loadCatalog();
+document.addEventListener("DOMContentLoaded", async () => {
   setupEventListeners();
   checkAdminSession();
+  
+  // Mostrar indicador de carga
+  DOM.productGrid.innerHTML = `
+    <div class="loading-indicator" style="text-align: center; padding: 4rem 1rem; grid-column: 1 / -1; color: var(--text-muted);">
+      <svg class="animate-spin" style="margin: 0 auto 1.5rem; width: 48px; height: 48px; color: var(--primary-color); animation: spin 1s linear infinite;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity: 0.25;"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" style="opacity: 0.75;"></path>
+      </svg>
+      <p style="font-weight: 600; font-size: 1.1rem; color: var(--text-color);">Cargando catálogo desde la nube...</p>
+      <p style="font-size: 0.9rem; margin-top: 0.5rem; color: var(--text-muted);">Por favor espera un momento.</p>
+    </div>
+  `;
+  
+  await loadCatalogFromServer();
+  
   renderCategoryTabs();
   renderCatalog();
 });
 
 // --- Carga y Semillado de Datos ---
-function loadCatalog() {
+async function loadCatalogFromServer() {
+  try {
+    const res = await fetch(API_URL);
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    
+    const data = await res.json();
+    state.products = data.products || [];
+    categories = data.categories || JSON.parse(JSON.stringify(CATEGORIES_DATA));
+    
+    saveCatalogLocal();
+    saveCategoriesLocal();
+  } catch (e) {
+    console.warn("No se pudo conectar a la base de datos en la nube. Usando datos locales (offline):", e);
+    loadCategoriesLocal();
+    loadCatalogLocal();
+  }
+}
+
+function loadCatalogLocal() {
   const localData = safeStorage.getItem("chimipesca_catalog");
   if (localData) {
     try {
       state.products = JSON.parse(localData);
-      rebuildCategoriesFromProducts();
     } catch (e) {
-      console.error("Error cargando datos de localStorage, restaurando predeterminados.", e);
       state.products = [...DEFAULT_PRODUCTS];
-      categories = JSON.parse(JSON.stringify(CATEGORIES_DATA));
-      saveCatalog();
-      saveCategories();
     }
   } else {
-    // Si está vacío, sembramos el catálogo con los 6 productos de demostración
     state.products = [...DEFAULT_PRODUCTS];
-    categories = JSON.parse(JSON.stringify(CATEGORIES_DATA));
-    saveCatalog();
-    saveCategories();
   }
 }
 
-function saveCatalog() {
+function saveCatalogLocal() {
   safeStorage.setItem("chimipesca_catalog", JSON.stringify(state.products));
 }
 
 // Comprueba si el admin ya estaba logueado en esta sesión de navegador
 function checkAdminSession() {
   const sessionStatus = safeStorage.getItem("chimipesca_admin_logged", true);
-  if (sessionStatus === "true") {
+  const password = safeStorage.getItem("chimipesca_admin_password", true);
+  if (sessionStatus === "true" && password === "chimi2026") {
     state.isAdmin = true;
     DOM.adminLoginTrigger.classList.add("logged-in");
     DOM.adminLoginTrigger.style.color = "var(--primary-color)";
     DOM.adminLoginTrigger.setAttribute("title", "Abrir Panel Administrador");
+  } else {
+    state.isAdmin = false;
+    safeStorage.removeItem("chimipesca_admin_logged", true);
+    safeStorage.removeItem("chimipesca_admin_password", true);
   }
 }
 
@@ -385,6 +420,12 @@ function setupEventListeners() {
   DOM.backupExportBtn.addEventListener("click", exportCatalogJSON);
   DOM.backupImportFile.addEventListener("change", importCatalogJSON);
   DOM.backupResetBtn.addEventListener("click", resetCatalogToSeeded);
+
+  // Gestión de Categorías
+  DOM.manageCategorySelect.addEventListener("change", handleManageCategorySelectChange);
+  DOM.manageSubcategorySelect.addEventListener("change", handleManageSubcategorySelectChange);
+  DOM.deleteCategoryBtn.addEventListener("click", handleDeleteCategory);
+  DOM.deleteSubcategoryBtn.addEventListener("click", handleDeleteSubcategory);
 
   // Escuchar Tecla Esc para cerrar modales
   document.addEventListener("keydown", (e) => {
@@ -683,29 +724,50 @@ function triggerAdminAction() {
   }
 }
 
-function handleAdminLoginSubmit(e) {
+async function handleAdminLoginSubmit(e) {
   e.preventDefault();
   const password = DOM.adminPasswordInput.value;
   
-  // Contraseña de administrador predeterminada: admin123
-  if (password === "admin123") {
-    state.isAdmin = true;
-    safeStorage.setItem("chimipesca_admin_logged", "true", true);
+  DOM.loginErrorMsg.classList.add("hidden");
+  DOM.adminPasswordInput.disabled = true;
+  
+  const submitBtn = DOM.adminLoginForm.querySelector("button[type='submit']");
+  const originalText = submitBtn.textContent;
+  submitBtn.textContent = "Verificando...";
+  submitBtn.disabled = true;
+
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "auth", password })
+    });
     
-    // Cambiar estilos del botón lock del header para indicar login
-    DOM.adminLoginTrigger.classList.add("logged-in");
-    DOM.adminLoginTrigger.style.color = "var(--primary-color)";
-    DOM.adminLoginTrigger.setAttribute("title", "Abrir Panel Administrador");
-    
-    DOM.adminPasswordInput.value = "";
-    DOM.loginErrorMsg.classList.add("hidden");
-    
-    closeModal(DOM.adminAuthModal);
-    openAdminDashboard();
-  } else {
-    DOM.loginErrorMsg.classList.remove("hidden");
-    DOM.adminPasswordInput.focus();
-    DOM.adminPasswordInput.select();
+    if (res.ok) {
+      state.isAdmin = true;
+      safeStorage.setItem("chimipesca_admin_logged", "true", true);
+      safeStorage.setItem("chimipesca_admin_password", password, true);
+      
+      // Cambiar estilos del botón lock del header para indicar login
+      DOM.adminLoginTrigger.classList.add("logged-in");
+      DOM.adminLoginTrigger.style.color = "var(--primary-color)";
+      DOM.adminLoginTrigger.setAttribute("title", "Abrir Panel Administrador");
+      
+      DOM.adminPasswordInput.value = "";
+      closeModal(DOM.adminAuthModal);
+      openAdminDashboard();
+    } else {
+      DOM.loginErrorMsg.classList.remove("hidden");
+      DOM.adminPasswordInput.focus();
+      DOM.adminPasswordInput.select();
+    }
+  } catch (error) {
+    alert("Error de conexión al verificar credenciales con el servidor.");
+    console.error(error);
+  } finally {
+    DOM.adminPasswordInput.disabled = false;
+    submitBtn.textContent = originalText;
+    submitBtn.disabled = false;
   }
 }
 
@@ -713,6 +775,7 @@ function handleAdminLoginSubmit(e) {
 function handleAdminLogout() {
   state.isAdmin = false;
   safeStorage.removeItem("chimipesca_admin_logged", true);
+  safeStorage.removeItem("chimipesca_admin_password", true);
   
   // Restaurar icono del lock del header
   DOM.adminLoginTrigger.classList.remove("logged-in");
@@ -727,6 +790,7 @@ function handleAdminLogout() {
 function openAdminDashboard() {
   renderAdminProductsTable();
   resetAdminForm();
+  populateManageCategories();
   openModal(DOM.adminDashboardModal);
 }
 
@@ -904,21 +968,43 @@ function removeFormImage() {
   DOM.removeImgBtn.classList.add("hidden");
 }
 
-// --- Altas, Bajas y Modificaciones (CRUD) ---
-function handleDeleteProduct(productId) {
+async function handleDeleteProduct(productId) {
   const product = state.products.find(p => p.id === productId);
   if (!product) return;
   
   if (confirm(`¿Estás seguro de que deseas eliminar el artículo "${product.name}"?`)) {
-    // Si estamos editando el mismo producto que eliminamos, cancelar la edición primero
-    if (state.editingProductId === productId) {
-      resetAdminForm();
-    }
+    const password = safeStorage.getItem("chimipesca_admin_password", true);
     
-    state.products = state.products.filter(p => p.id !== productId);
-    saveCatalog();
-    renderCatalog();
-    renderAdminProductsTable();
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "deleteProduct",
+          password,
+          productId
+        })
+      });
+      
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Error al eliminar el producto");
+      }
+      
+      // Si estamos editando el mismo producto que eliminamos, cancelar la edición primero
+      if (state.editingProductId === productId) {
+        resetAdminForm();
+      }
+      
+      state.products = state.products.filter(p => p.id !== productId);
+      saveCatalogLocal();
+      
+      renderCatalog();
+      renderAdminProductsTable();
+    } catch (error) {
+      alert(`Error al eliminar el producto: ${error.message}`);
+      console.error(error);
+    }
   }
 }
 
@@ -955,7 +1041,7 @@ window.startEditProduct = (productId) => {
   DOM.productForm.scrollIntoView({ behavior: 'smooth' });
 };
 
-function handleProductFormSubmit(e) {
+async function handleProductFormSubmit(e) {
   e.preventDefault();
   
   const id = DOM.editProductIdInput.value;
@@ -965,6 +1051,8 @@ function handleProductFormSubmit(e) {
   const description = DOM.formDescTextarea.value.trim();
   const priceWholesale = parseFloat(DOM.formPriceWholesaleInput.value);
   const priceRetail = parseFloat(DOM.formPriceRetailInput.value);
+  
+  let categoriesChanged = false;
   
   // Manejo de categoría personalizada
   if (category === "new_cat") {
@@ -976,6 +1064,7 @@ function handleProductFormSubmit(e) {
     category = newCatName;
     if (!categories[category]) {
       categories[category] = [];
+      categoriesChanged = true;
     }
   }
   
@@ -989,10 +1078,9 @@ function handleProductFormSubmit(e) {
     subcategory = newSubName;
     if (categories[category] && !categories[category].includes(subcategory)) {
       categories[category].push(subcategory);
+      categoriesChanged = true;
     }
   }
-  
-  saveCategories();
   
   // Asignar imagen (la subida comprimida en base64, o la imagen por defecto correspondiente si es nuevo y no subió nada)
   let image = state.currentUploadedImageBase64;
@@ -1006,41 +1094,81 @@ function handleProductFormSubmit(e) {
     }
   }
   
-  if (state.editingProductId) {
-    // EDITAR PRODUCTO EXISTENTE
-    const idx = state.products.findIndex(p => p.id === state.editingProductId);
-    if (idx !== -1) {
-      state.products[idx] = {
-        id: state.editingProductId,
-        name,
-        category,
-        subcategory,
-        description,
-        priceWholesale,
-        priceRetail,
-        image
-      };
-    }
-  } else {
-    // AGREGAR NUEVO PRODUCTO
-    const newProduct = {
-      id: "prod_" + Date.now(),
-      name,
-      category,
-      subcategory,
-      description,
-      priceWholesale,
-      priceRetail,
-      image
-    };
-    state.products.unshift(newProduct); // Agregar al inicio para que aparezca primero
-  }
+  const productToSave = {
+    id: state.editingProductId || ("prod_" + Date.now()),
+    name,
+    category,
+    subcategory,
+    description,
+    priceWholesale,
+    priceRetail,
+    image
+  };
   
-  saveCatalog();
-  renderCategoryTabs();
-  renderCatalog();
-  renderAdminProductsTable();
-  resetAdminForm();
+  const password = safeStorage.getItem("chimipesca_admin_password", true);
+  const originalSubmitText = DOM.formSubmitBtn.textContent;
+  DOM.formSubmitBtn.disabled = true;
+  DOM.formSubmitBtn.textContent = "Guardando...";
+  
+  try {
+    // 1. Guardar el producto en el servidor
+    const prodRes = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "saveProduct",
+        password,
+        product: productToSave
+      })
+    });
+    
+    if (!prodRes.ok) {
+      const errData = await prodRes.json();
+      throw new Error(errData.error || "Error al guardar el producto");
+    }
+    
+    // 2. Si las categorías cambiaron, sincronizarlas en el servidor
+    if (categoriesChanged) {
+      const catRes = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "saveCategories",
+          password,
+          categories
+        })
+      });
+      
+      if (!catRes.ok) {
+        const errData = await catRes.json();
+        console.error("Error guardando categorías:", errData.error);
+      }
+    }
+    
+    // Actualizar estado local
+    if (state.editingProductId) {
+      const idx = state.products.findIndex(p => p.id === state.editingProductId);
+      if (idx !== -1) {
+        state.products[idx] = productToSave;
+      }
+    } else {
+      state.products.unshift(productToSave);
+    }
+    
+    saveCatalogLocal();
+    saveCategoriesLocal();
+    
+    renderCategoryTabs();
+    renderCatalog();
+    renderAdminProductsTable();
+    resetAdminForm();
+  } catch (error) {
+    alert(`Error al guardar en el servidor: ${error.message}`);
+    console.error(error);
+  } finally {
+    DOM.formSubmitBtn.disabled = false;
+    DOM.formSubmitBtn.textContent = originalSubmitText;
+  }
 }
 
 function resetAdminForm() {
@@ -1099,7 +1227,7 @@ function importCatalogJSON(e) {
   if (!file) return;
   
   const reader = new FileReader();
-  reader.onload = function(evt) {
+  reader.onload = async function(evt) {
     try {
       const importedProducts = JSON.parse(evt.target.result);
       
@@ -1112,12 +1240,52 @@ function importCatalogJSON(e) {
         
         if (isValid) {
           if (confirm(`Se detectaron ${importedProducts.length} productos. ¿Deseas sobreescribir el catálogo actual con este archivo de copia de seguridad?`)) {
-            state.products = importedProducts;
-            saveCatalog();
-            renderCatalog();
-            renderAdminProductsTable();
-            resetAdminForm();
-            alert("Catálogo importado exitosamente.");
+            const password = safeStorage.getItem("chimipesca_admin_password", true);
+            
+            // Reconstruir categorías a partir de productos
+            const tempCategories = JSON.parse(JSON.stringify(CATEGORIES_DATA));
+            importedProducts.forEach(p => {
+              if (!tempCategories[p.category]) {
+                tempCategories[p.category] = [];
+              }
+              if (!tempCategories[p.category].includes(p.subcategory)) {
+                tempCategories[p.category].push(p.subcategory);
+              }
+            });
+            
+            try {
+              const res = await fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  action: "importCatalog",
+                  password,
+                  products: importedProducts,
+                  categories: tempCategories
+                })
+              });
+              
+              if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.error || "Error al importar el catálogo");
+              }
+              
+              state.products = importedProducts;
+              categories = tempCategories;
+              
+              saveCatalogLocal();
+              saveCategoriesLocal();
+              
+              renderCategoryTabs();
+              renderCatalog();
+              renderAdminProductsTable();
+              resetAdminForm();
+              populateManageCategories();
+              alert("Catálogo importado exitosamente.");
+            } catch (error) {
+              alert(`Error al importar: ${error.message}`);
+              console.error(error);
+            }
           }
         } else {
           alert("Error: El archivo JSON no tiene la estructura correcta de un catálogo de productos ChimiPesca.");
@@ -1135,18 +1303,202 @@ function importCatalogJSON(e) {
   reader.readAsText(file);
 }
 
-function resetCatalogToSeeded() {
+async function resetCatalogToSeeded() {
   if (confirm("¿Estás seguro de que deseas restablecer el catálogo a los artículos predeterminados? Se borrarán todos los cambios y productos que hayas agregado.")) {
-    state.products = [...DEFAULT_PRODUCTS];
-    saveCatalog();
+    const password = safeStorage.getItem("chimipesca_admin_password", true);
     
-    categories = JSON.parse(JSON.stringify(CATEGORIES_DATA));
-    saveCategories();
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "resetCatalog",
+          password
+        })
+      });
+      
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Error al restablecer el catálogo");
+      }
+      
+      state.products = [...DEFAULT_PRODUCTS];
+      categories = JSON.parse(JSON.stringify(CATEGORIES_DATA));
+      
+      saveCatalogLocal();
+      saveCategoriesLocal();
+      
+      renderCategoryTabs();
+      renderCatalog();
+      renderAdminProductsTable();
+      resetAdminForm();
+      populateManageCategories();
+      alert("Catálogo restablecido a valores predeterminados.");
+    } catch (error) {
+      alert(`Error al restablecer catálogo: ${error.message}`);
+      console.error(error);
+    }
+  }
+}
+
+// --- Gestión de Categorías y Subcategorías (Panel Admin) ---
+function populateManageCategories() {
+  let html = `<option value="" disabled selected>Seleccione categoría...</option>`;
+  Object.keys(categories).forEach(cat => {
+    html += `<option value="${cat}">${cat}</option>`;
+  });
+  DOM.manageCategorySelect.innerHTML = html;
+  
+  DOM.manageSubcategorySelect.innerHTML = `<option value="" disabled selected>Seleccione categoría primero...</option>`;
+  DOM.manageSubcategorySelect.disabled = true;
+  DOM.deleteCategoryBtn.disabled = true;
+  DOM.deleteSubcategoryBtn.disabled = true;
+}
+
+function populateManageSubcategories(category) {
+  const subcats = categories[category] || [];
+  let html = `<option value="" disabled selected>Seleccione subcategoría...</option>`;
+  subcats.forEach(sub => {
+    html += `<option value="${sub}">${sub}</option>`;
+  });
+  DOM.manageSubcategorySelect.innerHTML = html;
+  DOM.manageSubcategorySelect.disabled = false;
+  DOM.deleteSubcategoryBtn.disabled = true;
+}
+
+function handleManageCategorySelectChange(e) {
+  const cat = e.target.value;
+  if (cat) {
+    DOM.deleteCategoryBtn.disabled = false;
+    populateManageSubcategories(cat);
+  } else {
+    DOM.deleteCategoryBtn.disabled = true;
+    DOM.deleteSubcategoryBtn.disabled = true;
+  }
+}
+
+function handleManageSubcategorySelectChange(e) {
+  const sub = e.target.value;
+  DOM.deleteSubcategoryBtn.disabled = !sub;
+}
+
+async function handleDeleteCategory() {
+  const cat = DOM.manageCategorySelect.value;
+  if (!cat) return;
+  
+  // Contar productos asociados
+  const associatedProducts = state.products.filter(p => p.category === cat);
+  const count = associatedProducts.length;
+  
+  let confirmMsg = `¿Estás seguro de que deseas eliminar la categoría "${cat}"?`;
+  if (count > 0) {
+    confirmMsg += `\n\nATENCIÓN: Hay ${count} producto(s) en esta categoría que también serán eliminados de forma permanente.`;
+  }
+  
+  if (confirm(confirmMsg)) {
+    const password = safeStorage.getItem("chimipesca_admin_password", true);
     
-    renderCategoryTabs();
-    renderCatalog();
-    renderAdminProductsTable();
-    resetAdminForm();
-    alert("Catálogo restablecido a valores predeterminados.");
+    try {
+      const nextCats = { ...categories };
+      delete nextCats[cat];
+      
+      const remainingProducts = state.products.filter(p => p.category !== cat);
+      
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "importCatalog",
+          password,
+          products: remainingProducts,
+          categories: nextCats
+        })
+      });
+      
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Error al eliminar la categoría");
+      }
+      
+      categories = nextCats;
+      state.products = remainingProducts;
+      
+      saveCatalogLocal();
+      saveCategoriesLocal();
+      
+      renderCategoryTabs();
+      renderCatalog();
+      renderAdminProductsTable();
+      populateFormCategories();
+      populateManageCategories();
+      resetAdminForm();
+      
+      alert(`Categoría "${cat}" eliminada exitosamente.`);
+    } catch (error) {
+      alert(`Error al eliminar categoría: ${error.message}`);
+      console.error(error);
+    }
+  }
+}
+
+async function handleDeleteSubcategory() {
+  const cat = DOM.manageCategorySelect.value;
+  const sub = DOM.manageSubcategorySelect.value;
+  if (!cat || !sub) return;
+  
+  // Contar productos asociados
+  const associatedProducts = state.products.filter(p => p.category === cat && p.subcategory === sub);
+  const count = associatedProducts.length;
+  
+  let confirmMsg = `¿Estás seguro de que deseas eliminar la subcategoría "${sub}" de la categoría "${cat}"?`;
+  if (count > 0) {
+    confirmMsg += `\n\nATENCIÓN: Hay ${count} producto(s) en esta subcategoría que también serán eliminados de forma permanente.`;
+  }
+  
+  if (confirm(confirmMsg)) {
+    const password = safeStorage.getItem("chimipesca_admin_password", true);
+    
+    try {
+      const nextCats = JSON.parse(JSON.stringify(categories));
+      if (nextCats[cat]) {
+        nextCats[cat] = nextCats[cat].filter(s => s !== sub);
+      }
+      
+      const remainingProducts = state.products.filter(p => !(p.category === cat && p.subcategory === sub));
+      
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "importCatalog",
+          password,
+          products: remainingProducts,
+          categories: nextCats
+        })
+      });
+      
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Error al eliminar la subcategoría");
+      }
+      
+      categories = nextCats;
+      state.products = remainingProducts;
+      
+      saveCatalogLocal();
+      saveCategoriesLocal();
+      
+      renderCategoryTabs();
+      renderCatalog();
+      renderAdminProductsTable();
+      populateFormCategories();
+      populateManageCategories();
+      resetAdminForm();
+      
+      alert(`Subcategoría "${sub}" eliminada exitosamente.`);
+    } catch (error) {
+      alert(`Error al eliminar subcategoría: ${error.message}`);
+      console.error(error);
+    }
   }
 }
