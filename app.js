@@ -757,12 +757,18 @@ async function handleAdminLoginSubmit(e) {
       closeModal(DOM.adminAuthModal);
       openAdminDashboard();
     } else {
+      if (res.status === 401) {
+        DOM.loginErrorMsg.textContent = "Contraseña incorrecta. Inténtalo de nuevo.";
+      } else {
+        DOM.loginErrorMsg.textContent = `Error del servidor (${res.status}). Verifica el estado del Deploy en Netlify.`;
+      }
       DOM.loginErrorMsg.classList.remove("hidden");
       DOM.adminPasswordInput.focus();
       DOM.adminPasswordInput.select();
     }
   } catch (error) {
-    alert("Error de conexión al verificar credenciales con el servidor.");
+    DOM.loginErrorMsg.textContent = "Error de conexión: No se pudo contactar al servidor.";
+    DOM.loginErrorMsg.classList.remove("hidden");
     console.error(error);
   } finally {
     DOM.adminPasswordInput.disabled = false;
