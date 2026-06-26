@@ -134,7 +134,9 @@ let state = {
   searchQuery: "",
   isAdmin: false,
   editingProductId: null,
-  currentUploadedImageBase64: null
+  currentUploadedImageBase64: null,
+  currentPage: 1,
+  productsPerPage: 20
 };
 
 // --- Elementos del DOM ---
@@ -218,7 +220,11 @@ const DOM = {
   manageCategorySelect: document.getElementById("manage-category-select"),
   manageSubcategorySelect: document.getElementById("manage-subcategory-select"),
   deleteCategoryBtn: document.getElementById("delete-category-btn"),
-  deleteSubcategoryBtn: document.getElementById("delete-subcategory-btn")
+  deleteSubcategoryBtn: document.getElementById("delete-subcategory-btn"),
+
+  // Paginación
+  loadMoreContainer: document.getElementById("load-more-container"),
+  loadMoreBtn: document.getElementById("load-more-btn")
 };
 
 // --- API URL y Configuración ---
@@ -338,6 +344,7 @@ function setupEventListeners() {
   // Buscador Principal
   DOM.searchInput.addEventListener("input", (e) => {
     state.searchQuery = e.target.value.toLowerCase().trim();
+    state.currentPage = 1; // Resetea página al buscar
     renderCatalog();
   });
 
@@ -435,6 +442,14 @@ function setupEventListeners() {
       closeModal(DOM.adminDashboardModal);
     }
   });
+
+  // Botón Cargar Más
+  if (DOM.loadMoreBtn) {
+    DOM.loadMoreBtn.addEventListener("click", () => {
+      state.currentPage++;
+      renderCatalog();
+    });
+  }
 }
 
 // --- Lógica del Catálogo (Renderizado y Filtrado) ---
@@ -470,6 +485,7 @@ function renderCategoryTabs() {
 function selectCategory(category) {
   state.currentCategory = category;
   state.currentSubcategory = null; // Resetea la subcategoría al cambiar de categoría principal
+  state.currentPage = 1; // Resetea página al cambiar de categoría
 
   if (category === "all") {
     DOM.subcategoryGroup.classList.add("hidden");
@@ -502,6 +518,7 @@ function renderSubcategoryTabs(category) {
 
       const subcat = btn.getAttribute("data-subcategory");
       state.currentSubcategory = subcat === "all" ? null : subcat;
+      state.currentPage = 1; // Resetea página al cambiar de subcategoría
       renderCatalog();
     });
   });
@@ -511,6 +528,7 @@ function resetAllFilters() {
   state.currentCategory = "all";
   state.currentSubcategory = null;
   state.searchQuery = "";
+  state.currentPage = 1; // Resetea página al limpiar filtros
 
   DOM.searchInput.value = "";
   DOM.subcategoryGroup.classList.add("hidden");
@@ -539,10 +557,7 @@ function getFilteredProducts() {
 
 function renderCatalog() {
   const filtered = getFilteredProducts();
-
-  // Actualizar contador
   const count = filtered.length;
-  DOM.resultsCounter.textContent = count === 1 ? "Mostrando 1 producto" : `Mostrando ${count} productos`;
 
   // Renderizar filtros activos
   renderActiveFiltersBar();
@@ -550,13 +565,36 @@ function renderCatalog() {
   if (count === 0) {
     DOM.productGrid.innerHTML = "";
     DOM.emptyState.classList.remove("hidden");
+    DOM.resultsCounter.textContent = "Mostrando 0 productos";
+    if (DOM.loadMoreContainer) DOM.loadMoreContainer.classList.add("hidden");
     return;
   }
 
   DOM.emptyState.classList.add("hidden");
 
+  // Obtener los productos a renderizar según la página actual
+  const limit = state.currentPage * state.productsPerPage;
+  const productsToRender = filtered.slice(0, limit);
+  const shownCount = productsToRender.length;
+
+  // Actualizar contador
+  if (count === 1) {
+    DOM.resultsCounter.textContent = "Mostrando 1 producto";
+  } else {
+    DOM.resultsCounter.textContent = `Mostrando ${shownCount} de ${count} productos`;
+  }
+
+  // Mostrar u ocultar el botón "Cargar más"
+  if (DOM.loadMoreContainer) {
+    if (count > shownCount) {
+      DOM.loadMoreContainer.classList.remove("hidden");
+    } else {
+      DOM.loadMoreContainer.classList.add("hidden");
+    }
+  }
+
   let gridHtml = "";
-  filtered.forEach(p => {
+  productsToRender.forEach(p => {
     // Formatear precios en moneda argentina ARS
     const wholesalePriceStr = p.priceWholesale.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 });
     const retailPriceStr = p.priceRetail.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 });

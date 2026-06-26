@@ -530,6 +530,18 @@ label {
   color: var(--primary-hover);
 }
 
+/* Paginación - Cargar Más */
+.load-more-container {
+  display: flex;
+  justify-content: center;
+  margin: 16px 0 28px 0;
+}
+
+.load-more-btn {
+  min-width: 220px;
+  box-shadow: var(--shadow-3d);
+}
+
 /* --- Resultados Metadatos --- */
 .catalog-meta {
   display: flex;
@@ -1756,5 +1768,122 @@ input[type="file"] {
   
   .backup-btn, .import-wrapper .backup-btn {
     justify-content: center;
+  }
+}
+
+/* Pantallas medianas y pequeñas para Administración (Tabla Responsiva) */
+@media (max-width: 600px) {
+  .dashboard-container.glass-card {
+    padding: 16px;
+  }
+  
+  .dashboard-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    text-align: center;
+  }
+  
+  .dashboard-header .dashboard-actions {
+    margin-right: 0;
+    width: 100%;
+  }
+  
+  .logout-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr !important;
+    gap: 10px;
+  }
+
+  /* Transformar la tabla de administración en una vista de lista/tarjetas */
+  .admin-table thead {
+    display: none;
+  }
+  
+  .admin-table, 
+  .admin-table tbody, 
+  .admin-table tr, 
+  .admin-table td {
+    display: block;
+    width: 100%;
+  }
+  
+  .admin-table tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 8px;
+    border-bottom: 2px solid var(--inner-glass-border);
+    position: relative;
+  }
+  
+  .admin-table td {
+    padding: 0;
+    border: none;
+    width: auto;
+  }
+  
+  /* Foto */
+  .admin-table td:nth-child(1) {
+    flex: 0 0 44px;
+    margin-right: 8px;
+  }
+  
+  /* Nombre */
+  .admin-table td:nth-child(2) {
+    flex: 1 1 calc(100% - 68px); /* Toma el resto de la fila */
+  }
+  
+  .td-name {
+    max-width: 100%;
+    white-space: normal;
+    word-break: break-word;
+    font-size: 0.95rem;
+    line-height: 1.3;
+  }
+  
+  /* Categoría */
+  .admin-table td:nth-child(3) {
+    flex: 0 0 auto;
+    margin-left: 52px; /* Alineado bajo el nombre */
+    margin-top: 4px;
+  }
+  
+  /* Precios */
+  .admin-table td:nth-child(4) {
+    flex: 0 0 auto;
+    margin-left: 12px;
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+  }
+  
+  .td-prices-box {
+    flex-direction: row;
+    gap: 10px;
+    font-size: 0.82rem;
+  }
+  
+  /* Acciones (Editar/Eliminar) */
+  .admin-table td:nth-child(5) {
+    flex: 0 0 auto;
+    margin-left: auto;
+    margin-top: 4px;
+  }
+  
+  .td-actions {
+    gap: 14px;
+  }
+  
+  .action-btn {
+    padding: 8px; /* Target táctil más cómodo */
+    border: 1px solid var(--inner-glass-border);
+    border-radius: var(--border-radius-sm);
+    background: var(--inner-glass-bg);
   }
 }
